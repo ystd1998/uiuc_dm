@@ -1,5 +1,9 @@
 meta
 yelp_dataset_challenge_academic_dataset 
+categories
+*.txt
+*.csv
+*.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
