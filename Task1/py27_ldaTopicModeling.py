@@ -44,7 +44,7 @@ def main(K, numfeatures, sample_file, num_display_words, outputfile):
         output_text.append( topic + "," )
         for term, weight in item[1]:
             # print ("term: ", term, ", weight: ", weight)
-            output_text.append( topic + "." + term + ", " + str(weight) )
+            output_text.append( topic + "." + term + ", " + str(int(weight*1e+6+0.5)) )
 
     print "writing topics to file:", outputfile
     with open ( outputfile, 'w' ) as f:
