@@ -7,57 +7,81 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from time import time
 from nltk.tokenize import sent_tokenize
 
-def main(K, numfeatures, sample_file, num_display_words, outputfile):
+def output_topic(text, K, numfeatures, num_display_words, outputfile):
+
     K_clusters = K
     vectorizer = TfidfVectorizer(max_df=0.5, max_features=numfeatures,
-                                     min_df=2, stop_words='english',
-                                     use_idf=True)
-
-    text = []
-    with open (sample_file, 'r') as f:
-        text = f.readlines()
+                                 min_df=2, stop_words='english',
+                                 use_idf=True)
 
     t0 = time()
-    print("Extracting features from the training dataset using a sparse vectorizer")
     X = vectorizer.fit_transform(text)
     print("done in %fs" % (time() - t0))
     print("n_samples: %d, n_features: %d" % X.shape)
-    
+
     # mapping from feature id to acutal word
-    id2words ={}
-    for i,word in enumerate(vectorizer.get_feature_names()):
+    id2words = {}
+    for i, word in enumerate(vectorizer.get_feature_names()):
         id2words[i] = word
 
     t0 = time()
     print("Applying topic modeling, using LDA")
     print(str(K_clusters) + " topics")
-    corpus = matutils.Sparse2Corpus(X,  documents_columns=False)
+    corpus = matutils.Sparse2Corpus(X, documents_columns=False)
     lda = models.ldamodel.LdaModel(corpus, num_topics=K_clusters, id2word=id2words)
     print("done in %fs" % (time() - t0))
-        
+
     output_text = []
     output_text.append("id,value")
     topic_root = "Topic"
-    output_text.append( topic_root + "," )
+    output_text.append(topic_root + ",")
     for i, item in enumerate(lda.show_topics(num_topics=K_clusters, num_words=num_display_words, formatted=False)):
         # print ( "i: ", i, " ,type(item): ", type(item), ", item: ", item[1])
         # output_text.append("Topic: " + str(i))
-        topic = topic_root + ".T"+str(i)
-        output_text.append( topic + "," )
+        topic = topic_root + ".T" + str(i)
+        output_text.append(topic + ",")
         for term, weight in item[1]:
             # print ("term: ", term, ", weight: ", weight)
-            output_text.append( topic + "." + term + ", " + str(int(weight*1e+6+0.5)) )
+            output_text.append(topic + "." + term + ", " + str(int(weight * 1e+6 + 0.5)))
 
     print "writing topics to file:", outputfile
-    with open ( outputfile, 'w' ) as f:
+    with open(outputfile, 'w') as f:
         f.write('\n'.join(output_text))
-        
+
+def main(K, numfeatures, sample_file, ranking_file, num_display_words, outputfile):
+
+    text = []
+    with open (sample_file, 'r') as f:
+        text = f.readlines()
+
+    ranks = []
+    with open (ranking_file, 'r') as f:
+        ranks = f.readlines()
+
+    pos_review = []
+    neg_review = []
+    for t, r in zip(text, ranks):
+        if ( float(r) >= 4.0 ):
+            pos_review.append(t)
+        elif ( float(r) <= 2.0 ):
+            neg_review.append(t)
+
+    print("Extracting features from the training dataset using a sparse vectorizer")
+    output_topic(text, K, numfeatures, num_display_words, outputfile)
+
+    print("Extracting features from the positive review dataset using a sparse vectorizer")
+    output_topic(pos_review, K, numfeatures, num_display_words, "pos_" + outputfile)
+
+    print("Extracting features from the negative review dataset using a sparse vectorizer")
+    output_topic(neg_review, K, numfeatures, num_display_words, "neg_" + outputfile)
         
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='This program takes in a file and some parameters and generates topic modeling from the file. This program assumes the file is a line corpus, e.g. list or reviews and outputs the topic with words and weights on the console.')
     
     parser.add_argument('-f', dest='path2datafile', default="review_sample_100000.txt", 
                        help='Specifies the file which is used by to extract the topics. The default file is "review_sample_100000.txt"')
+    parser.add_argument('-rf', dest='path2rankfile', default="review_ratings_100000.txt",
+                       help='Specifies the file which is used by to extract the rankings. The default file is "review_ratings_100000.txt"')
     
     parser.add_argument('-o', dest='outputfile', default="sample_topics.txt", 
                        help='Specifies the output file for the topics, The format is as a topic number followed by a list of words with corresdponding weights of the words. The default output file is "sample_topics.txt"')
@@ -77,6 +101,6 @@ if __name__=="__main__":
     if args.logging:
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-    print "using input file:", args.path2datafile
-    main(args.K, args.featureNum, args.path2datafile, args.displayWN, args.outputfile)
+    print "using input file: ", args.path2datafile, ", ranking file: ", args.path2rankfile
+    main(args.K, args.featureNum, args.path2datafile, args.path2rankfile, args.displayWN, args.outputfile)
     
