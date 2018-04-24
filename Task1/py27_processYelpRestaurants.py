@@ -11,9 +11,13 @@ from nltk.tokenize import sent_tokenize
 import glob
 import argparse
 import os
-path2files="yelp_dataset_challenge_academic_dataset/"
-path2buisness=path2files+"yelp_academic_dataset_business.json"
-path2reviews=path2files+"yelp_academic_dataset_review.json"
+
+from os.path import expanduser
+home = expanduser("~")
+
+path2files = os.path.join(home, "yelp_dataset_challenge_academic_dataset")
+path2buisness = os.path.join(path2files, "yelp_academic_dataset_business.json")
+path2reviews  = os.path.join(path2files, "yelp_academic_dataset_review.json")
 
 def main(save_sample, save_categories):
     categories = set([])
